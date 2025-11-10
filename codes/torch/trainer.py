@@ -8,7 +8,14 @@ from argparse import ArgumentParser
 import torch
 import torchvision
 import tfrecord
+
+# Old
+"""
 import pytorch_lightning
+"""
+# New
+import pytorch_lightning
+from pytorch_lightning.cli import LightningCLI
 
 from BReGNeXt import BReGNeXt
 from utils import ShuffleDataset
@@ -77,31 +84,81 @@ class BReGNeXtPTLDriver(pytorch_lightning.LightningModule):
         return [optimizer], [scheduler]
 
 
+class FERDataModule(pytorch_lightning.LightningDataModule):
+    def __init__(self, train_data_path: str, val_data_path: str, batch_size: int = 64):
+        super().__init__()
+        self.train_data_path = train_data_path
+        self.val_data_path = val_data_path
+        self.batch_size = batch_size
+
+    # to be implemented later
+
+    def setup(self, stage=None):
+        # load TFRecords, preprocess, etc.
+        pass
+
+    def train_dataloader(self):
+        # return your DataLoader
+        pass
+
+    def val_dataloader(self):
+        # return your DataLoader
+        pass
+
+
 if __name__ == '__main__':
-    parser = ArgumentParser()
-    parser.add_argument('--use_focal_loss', action='store_true', help='Use focal loss when training.')
-    parser.add_argument('--train_data_path', type=str, help='The path to the .tfrecords file for training.', required=True)
-    parser.add_argument('--val_data_path', type=str, help='The path to the .tfrecords file for evaluation.', required=True)
-    parser = pytorch_lightning.Trainer.add_argparse_args(parser)
-    args = parser.parse_args()
+
+    # deprecated, needs to be changed to implement argparsing
+    """
+        parser = ArgumentParser()
+        parser.add_argument('--use_focal_loss', action='store_true', help='Use focal loss when training.')
+        parser.add_argument('--train_data_path', type=str, help='The path to the .tfrecords file for training.', required=True)
+        parser.add_argument('--val_data_path', type=str, help='The path to the .tfrecords file for evaluation.', required=True)
+        parser = pytorch_lightning.Trainer.add_argparse_args(parser)
+        args = parser.parse_args()
+    """
+
+    indexpath = "train.tfrecords.index"
+    # use relative directories rather than argparsing
+
 
     train_dataset = ShuffleDataset(tfrecord.torch.dataset.TFRecordDataset(
-        data_path=args.train_data_path,
-        index_path=None,
+        data_path="../../tfrecords/training_FER2013_sample.tfrecords",
+        index_path=indexpath,
         description={'image_raw': 'byte', 'label': 'int'},
         transform=decode_and_preprocess_image,
     ), 1024)
+
+
     train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=64, num_workers=4)
 
     valid_dataset = tfrecord.torch.dataset.TFRecordDataset(
-        data_path=args.val_data_path,
-        index_path=None,
+        data_path="../../tfrecords/validation_FER2013_sample.tfrecords",
+        index_path=indexpath,
         description={'image_raw': 'byte', 'label': 'int'},
         transform=decode_and_preprocess_image,
     )
     valid_dataloader = torch.utils.data.DataLoader(valid_dataset, batch_size=64, num_workers=4)
 
+
+
+
+
+
     # Fit the model to the trainer.
-    model = BReGNeXtPTLDriver(use_focal_loss=args.use_focal_loss)
-    trainer = pytorch_lightning.Trainer.from_argparse_args(args)
+    
+    # use_focal_loss is defaulted to true, needs to be conv-ed to arg
+    model = BReGNeXtPTLDriver(use_focal_loss=True)
+
+
+    trainer = pytorch_lightning.Trainer(
+        max_epochs=1,
+        # devices instead of gpus
+        # gpus
+        devices = 1,
+        accelerator = 'gpu'
+    )
+
+
+
     trainer.fit(model, train_dataloader, valid_dataloader)
