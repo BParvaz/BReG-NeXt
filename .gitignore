@@ -139,3 +139,8 @@ cython_debug/
 
 # Lightning
 lightning_logs/
+
+
+### Added files to gitignore
+logs/
+

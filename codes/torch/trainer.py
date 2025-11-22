@@ -39,7 +39,7 @@ _image_transform = torchvision.transforms.Compose([
 
 
 def decode_and_preprocess_image(features):
-    print(features['label'])
+    #print(features['label'])
     # Decode the image
     
     #Convert bytes to numpy array
@@ -137,15 +137,17 @@ if __name__ == '__main__':
     # indexpath = "train.tfrecords.index"
     # use relative directories rather than argparsing
 
-    realtrain ="../../tfrecords/training_FER2013_sample.tfrecords"
-    realval = "../../tfrecords/validation_FER2013_sample.tfrecords"
+    real_train ="../../tfrecords/training_FER2013_sample.tfrecords"
+    real_val = "../../tfrecords/validation_FER2013_sample.tfrecords"
+    real_test = ""
 
-    testtrain = "../../jobscripts/training_single_class.tfrecords"
-    testval = "../../jobscripts/validation_single_class.tfrecords"
+    test_train = "../../tfrecords/training_single_class.tfrecords"
+    test_val = "../../tfrecords/validation_single_class.tfrecords"
+    test_test = "" # to implement later
 
     
     train_dataset = ShuffleDataset(tfrecord.torch.dataset.TFRecordDataset(
-        data_path=realtrain,
+        data_path=real_train,
         index_path=None,
         description={'image_raw': 'byte', 'label': 'int'},
         transform=decode_and_preprocess_image,
@@ -153,12 +155,21 @@ if __name__ == '__main__':
     train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size=64, num_workers=4)
 
     valid_dataset = tfrecord.torch.dataset.TFRecordDataset(
-        data_path=realval,
+        data_path=real_val,
         index_path=None,
         description={'image_raw': 'byte', 'label': 'int'},
         transform=decode_and_preprocess_image,
     )
     valid_dataloader = torch.utils.data.DataLoader(valid_dataset, batch_size=64, num_workers=4)
+
+
+    test_dataset = tfrecord.torch.dataset.TFRecordDataset(
+        data_path=real_test,
+        index_path=None,
+        description={'image_raw': 'byte', 'label': 'int'},
+        transform=decode_and_preprocess_image,
+    )
+    test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size=64, num_workers=4)
 
 
 
@@ -194,11 +205,12 @@ if __name__ == '__main__':
         accelerator = 'gpu',
         logger = logger
     )
-
+    
+    """
     labelsA = []
     for i, sample in enumerate(train_dataset.dataset):
         label = sample['label']     # get the actual label tensor
-        print(label)
+        #print(label)
         labelsA.append(label.item() if torch.is_tensor(label) else label)
         if i > 500:
             break
@@ -208,13 +220,27 @@ if __name__ == '__main__':
     labelsB = []
     for i, sample in enumerate(valid_dataset):
         label = sample['label']
-        print(label)
+        #print(label)
         labelsB.append(label.item() if torch.is_tensor(label) else label)
         if i > 500:
             break
     print("Unique validation labels seen:", set(labelsB))
 
+    labelsC = []
+    for i, sample in enumerate(test_dataset):
+        label = sample['label']
+        #print(label)
+        labelsB.append(label.item() if torch.is_tensor(label) else label)
+        if i > 500:
+            break
+    print("Unique test labels seen:", set(labelsB))
+
+    """
+
+
+
 
 
 
     trainer.fit(model, train_dataloader, valid_dataloader)
+    #trainer.test(model, test_dataloader) # for eventual implementation
