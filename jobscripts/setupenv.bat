@@ -19,11 +19,11 @@ source activate PyTorch-Env
 
 # pytorch-lightning is not entirely necessary for now
 # but i intend to implement cli args using lightningCLI
-conda install pytorch torchvision pytorch-lightning -c pytorch-nightly -c nvidia -c conda-forge -y
+conda install pytorch torchvision pytorch-lightning cudatoolkit -c pytorch-nightly -c nvidia -c conda-forge -y
 
 # tfrecord is a tensorflow binary, not independent on conda
 # needs to be installed using pip itself
-pip install tfrecord -y
+pip install tfrecord
 
 
 conda list
